@@ -2,7 +2,7 @@
 
 **Proving a fact without revealing the whole record.**
 ICSC 2026 Universities Hackathon, Track B (Digital Identity, Trust and ICT).
-Team Zer0Day Saints.
+Team Kairos.
 
 **Live app:** https://sabi-id-icsc.onrender.com/
 **Code:** https://github.com/ndujesco/SabiID
