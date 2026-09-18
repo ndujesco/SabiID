@@ -1,22 +1,18 @@
+# generated / local state
 __pycache__/
 *.pyc
 data/sabiid.db
 data/sabiid.db-*
 data/gateway_ed25519.key
-demo/node_modules/
-demo/out/parts/
-demo/out/*.webm
-demo/narration/
 .DS_Store
+
+# private working material, not part of the published solution
+demo/
+vns/
+docs/VIDEO_SCRIPT.md
+docs/SUBTITLE_GUIDE.md
+docs/TECHNICAL_WRITEUP.md
+docs/build_srt.py
+docs/transcribe_srt.py
+docs/make_pdf.mjs
 _writeup.tmp.html
-demo/out/sync_parts/
-demo/out/demo_captioned_silent.mp4
-demo/out/demo_captioned.webm
-demo/out/audio_concat.m4a
-demo/out/audio_list.txt
-demo/out/captions_png/
-demo/out/_caption_bar.html
-demo/out/_overlay_graph.txt
-demo/narration_clean/
-*.ggml-*.bin
-ggml-*.bin
