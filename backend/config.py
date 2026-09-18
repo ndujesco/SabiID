@@ -1,4 +1,5 @@
 """Single place for names and tunables so a rename is one edit."""
+import os
 from pathlib import Path
 
 PRODUCT_NAME = "SabiID"
@@ -22,5 +23,5 @@ LIVENESS_WINDOW_SECONDS = 24 * 60 * 60
 # money is held back for manual review.
 GHOST_MISS_THRESHOLD = 3
 
-HOST = "127.0.0.1"
-PORT = 8099
+HOST = os.environ.get("HOST", "127.0.0.1")
+PORT = int(os.environ.get("PORT", "8099"))
