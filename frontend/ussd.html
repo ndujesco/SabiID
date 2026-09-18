@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SabiID USSD Path</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main>
+  <h1>The no-smartphone path</h1>
+  <p class="lead">Some citizens have a basic phone and weak signal. The same approval
+    works over USSD, the short-code menus already used for mobile banking. There is no
+    app and no data. The one thing a feature phone cannot do is a face check, so a
+    liveness field is skipped here and the citizen is told so.</p>
+
+  <label for="sid">Enrolled SID</label>
+  <select id="sid" style="max-width:320px"></select>
+
+  <div class="phone">
+    <div class="screen" id="screen">Dial *737*5# to begin.</div>
+    <div class="keys">
+      <button data-a="approve">1</button>
+      <button data-a="history">2</button>
+      <button data-a="freeze">3</button>
+    </div>
+  </div>
+  <div class="inline" style="justify-content:center">
+    <button id="dial">Dial *737*5#</button>
+  </div>
+</main>
+
+<script src="/static/app.js"></script>
+<script>
+header("/ussd");
+async function boot() {
+  const list = await api("/api/citizens");
+  list.forEach(c => $("#sid").append(el("option", { value: c.sid }, `${c.sid} (NIN …${c.nin_tail})`)));
+}
+async function send(action) {
+  const r = await jpost("/api/ussd", { sid: $("#sid").value, action });
+  $("#screen").textContent = r.screen;
+}
+$("#dial").onclick = () => send("menu");
+document.querySelectorAll(".keys button").forEach(b => b.onclick = () => send(b.dataset.a));
+boot();
+</script>
+</body>
+</html>

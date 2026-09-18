@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SabiID Partner Console</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main>
+  <h1>Partner console</h1>
+  <p class="lead">A partner asks about one citizen. The citizen approves it on the
+    Citizen page. The partner then gets yes or no, a signed attestation it can check
+    on its own, and nothing else.</p>
+
+  <label for="partner">Acting as</label>
+  <select id="partner"></select>
+
+  <div id="last"></div>
+  <div id="qa"></div>
+  <div id="payroll"></div>
+</main>
+
+<script src="/static/app.js"></script>
+<script>
+header("/partner");
+
+const PRESETS = {
+  bank: [
+    { p: "is_verified", lbl: "Is this a verified SabiID identity", sub: "yes or no" },
+    { p: "age_over_18", lbl: "Is this person over 18", sub: "the date of birth is never returned" },
+    { p: "name_matches:", lbl: "Does the name match", sub: "type the name on the form", arg: "Adaeze Chioma Nwosu" },
+    { p: "state_of_residence_is:", lbl: "Is the state of residence", sub: "type a state", arg: "Lagos" },
+    { p: "nin_bvn_name_consistency", lbl: "Do the NIN and BVN names agree", sub: "a KYC consistency check" },
+    { p: "reveal:full_name", lbl: "Release the full name", sub: "an actual value, only if approved" },
+  ],
+  hospital: [
+    { p: "is_verified", lbl: "Is this a verified SabiID identity", sub: "yes or no" },
+    { p: "name_matches:", lbl: "Does the name match", sub: "type the name on the chart", arg: "Adaeze Chioma Nwosu" },
+    { p: "reveal:full_name", lbl: "Release the full name for the chart", sub: "an actual value, only if approved" },
+    { p: "genotype", lbl: "Genotype", sub: "not held by NIMC or NIBSS" },
+  ],
+};
+
+let CITIZENS = [];
+
+async function boot() {
+  const partners = await api("/api/partners");
+  const sel = $("#partner");
+  partners.forEach(p => sel.append(el("option", { value: p.partner_id, "data-kind": p.kind }, p.display_name)));
+  CITIZENS = await api("/api/citizens");
+  sel.addEventListener("change", render);
+  renderLast();
+  render();
+}
+
+function render() {
+  const opt = $("#partner").selectedOptions[0];
+  const kind = opt.dataset.kind;
+  $("#qa").innerHTML = "";
+  $("#payroll").innerHTML = "";
+  $("#last").innerHTML = "";
+  if (kind === "payroll") { renderPayroll(opt.value); }
+  else { renderLast(); renderQA(opt.value, kind); }
+}
+
+// -------------------------------------------------- last request / the answer
+function renderLast() {
+  const id = localStorage.getItem("sabiid_last_req");
+  const box = $("#last");
+  box.innerHTML = "";
+  if (!id) return;
+  const answer = el("div", {});
+  box.append(el("div", { class: "card" },
+    el("div", { class: "inline" },
+      el("span", {}, el("b", {}, "Your last request: "), el("span", { class: "mono" }, id)),
+      el("button", { class: "ghost", onclick: () => showAnswer(localStorage.getItem("sabiid_last_req"), answer) }, "Check for the answer")),
+    answer));
+}
+
+async function showAnswer(reqId, out) {
+  const r = await api("/api/requests/" + reqId);
+  out.innerHTML = "";
+  if (!r || r.status !== "completed") {
+    out.append(el("div", { class: "banner info" }, "Still waiting. The citizen has not approved yet."));
+    return;
+  }
+  const pres = r.result;
+  out.append(el("h2", {}, "The answer"));
+  pres.results.forEach(x => {
+    out.append(el("div", { class: "result-row" },
+      el("div", { class: "p" }, x.predicate),
+      outcomeChip(x.outcome),
+      el("div", { class: "x" }, (x.value ? `“${x.value}”  ` : "") + (x.referral || x.explanation || ""))));
+  });
+  out.append(el("div", { class: "spacer" }), el("div", { class: "kv" },
+    el("span", { class: "kk" }, "verified"), el("span", {}, String(pres.verified)),
+    el("span", { class: "kk" }, "confidence_score"), el("span", {}, pres.confidence_score + "  (a heuristic, not a calibrated probability)"),
+    el("span", { class: "kk" }, "expires"), el("span", {}, when(pres.expires_at)),
+    el("span", { class: "kk" }, "proof-of-check line"), el("span", {}, el("a", { href: "/auditor?seq=" + pres.ledger_seq }, "#" + pres.ledger_seq))));
+  const att = el("div", { class: "banner info" }, "Checking the attestation signature in the browser …");
+  out.append(el("div", { class: "spacer" }), att);
+  verifyAttestation(pres.attestation).then(v => {
+    att.className = "banner " + (v.ok ? "ok" : v.ok === null ? "info" : "bad");
+    att.textContent = v.text;
+  });
+}
+
+// ---------------------------------------------------------------- bank / hospital
+function renderQA(partnerId, kind) {
+  const wrap = $("#qa");
+  const cit = el("select", {});
+  CITIZENS.forEach(c => cit.append(el("option", { value: c.sid }, `${c.sid}  (NIN …${c.nin_tail})`)));
+  const purpose = el("input", { type: "text", value: kind === "bank" ? "Open a savings account" : "Admit for a procedure" });
+
+  const rows = [];
+  const checks = el("div", { class: "checks" });
+  PRESETS[kind].forEach(item => {
+    const cb = el("input", { type: "checkbox" });
+    if (["is_verified", "age_over_18", "name_matches:"].includes(item.p)) cb.checked = true;
+    const arg = item.arg !== undefined ? el("input", { type: "text", value: item.arg, style: "max-width:260px;margin-top:5px" }) : null;
+    rows.push({ item, cb, arg });
+    checks.append(el("div", { class: "row" }, cb,
+      el("div", {}, el("div", { class: "lbl" }, item.lbl), el("div", { class: "sub" }, item.sub), arg || "")));
+  });
+
+  const out = el("div", {});
+  const ask = el("button", {
+    onclick: async () => {
+      out.innerHTML = "";
+      const scope = rows.filter(r => r.cb.checked).map(r => r.item.arg !== undefined ? r.item.p + r.arg.value : r.item.p);
+      if (!scope.length) { out.append(el("div", { class: "banner bad" }, "Pick at least one thing to ask.")); return; }
+      const req = await jpost("/api/requests", { partner_id: partnerId, sid: cit.value, purpose: purpose.value, scope });
+      if (req.status !== "pending") { out.append(el("div", { class: "banner bad" }, req.reason || req.error)); return; }
+      localStorage.setItem("sabiid_last_req", req.request_id);
+      renderLast();
+      out.append(el("div", { class: "banner info" },
+        `Request ${req.request_id} created. Waiting for the citizen to approve on their phone.`));
+    }
+  }, "Send the request");
+
+  wrap.append(
+    el("div", { class: "card" },
+      el("label", {}, "Citizen"), cit,
+      el("label", {}, "Purpose"), purpose,
+      el("label", {}, "What do you need to know"), checks,
+      el("div", { class: "spacer" }), ask),
+    el("div", { class: "card", id: "qaout" }, out));
+}
+
+// --------------------------------------------------------------------- payroll
+function renderPayroll(ministryId) {
+  const wrap = $("#payroll");
+  const offline = el("input", { type: "checkbox", id: "opt-offline" });
+  const grace = el("input", { type: "checkbox", id: "opt-grace" });
+  const out = el("div", {});
+  let lastCycle = null;
+
+  const run = el("button", {
+    onclick: async () => {
+      out.innerHTML = "Running …";
+      if (offline.checked) await jpost("/api/sources/offline", { value: true });
+      const res = await jpost("/api/payroll/cycle", { ministry_id: ministryId, offline: offline.checked, grace: grace.checked });
+      if (offline.checked) await jpost("/api/sources/offline", { value: false });
+      lastCycle = res.summary.cycle_id;
+      renderCycle(res, out, lastCycle);
+    }
+  }, "Run the monthly cycle");
+
+  const reconcile = el("button", {
+    class: "ghost",
+    onclick: async () => {
+      if (!lastCycle) return;
+      const res = await jpost("/api/payroll/reconcile", { cycle_id: lastCycle });
+      out.append(el("div", { class: "banner ok" },
+        `Reconciled ${res.reconciled} queued lines in cycle ${res.reconciling_cycle} now that the sources are back.`));
+      const d = await api("/api/payroll/cycle/" + res.reconciling_cycle);
+      renderDecisions(d, out);
+    }
+  }, "Reconcile the queued cycle");
+
+  wrap.append(
+    el("div", { class: "card" },
+      el("div", { class: "checks" },
+        el("div", { class: "row" }, offline, el("div", {}, el("div", { class: "lbl" }, "Identity sources offline"),
+          el("div", { class: "sub" }, "simulate a network or power cut at NIMC and NIBSS"))),
+        el("div", { class: "row" }, grace, el("div", {}, el("div", { class: "lbl" }, "Grace mode"),
+          el("div", { class: "sub" }, "salary style: allow a few missed checks before holding. Off is pension style: no check this cycle, no pay")))),
+      el("div", { class: "spacer" }), run, reconcile),
+    el("div", { class: "card" }, out));
+}
+
+function renderCycle(res, out) {
+  const s = res.summary;
+  out.innerHTML = "";
+  out.append(el("div", { class: "banner " + (s.withheld ? "bad" : "ok") },
+    `${s.lines} lines. Released ${s.released} (${naira(s.released_naira)}). ` +
+    `Held for review ${s.withheld} (${naira(s.withheld_naira)}). Queued ${s.queued}.`));
+  renderDecisions(res.decisions, out);
+}
+
+function renderDecisions(decisions, out) {
+  const t = el("table", {},
+    el("tr", {}, ...["Line", "Name", "Monthly", "Outcome", "Why", "Log"].map(h => el("th", {}, h))));
+  decisions.forEach(d => {
+    t.append(el("tr", {},
+      el("td", { class: "mono" }, d.employee_no),
+      el("td", {}, d.display_name || "—"),
+      el("td", {}, naira(d.amount_naira)),
+      el("td", {}, outcomeChip(d.outcome)),
+      el("td", {}, d.reason),
+      el("td", {}, d.ledger_seq ? el("a", { href: "/auditor?seq=" + d.ledger_seq }, "#" + d.ledger_seq) : "—")));
+  });
+  out.append(t);
+  out.append(el("div", { class: "small muted", style: "margin-top:8px" },
+    "The held lines include real staff who were simply out of network signal this cycle. " +
+    "The system cannot tell that apart from a ghost, so it routes them to a human rather than guessing."));
+}
+
+boot();
+</script>
+</body>
+</html>

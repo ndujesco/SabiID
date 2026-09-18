@@ -1,0 +1,391 @@
+1
+00:00:00,020 --> 00:00:04,380
+Every day, somebody gets asked to prove one small thing.
+
+2
+00:00:04,820 --> 00:00:07,080
+A shop wants to know if you are over 18.
+
+3
+00:00:07,080 --> 00:00:09,310
+A bank wants to know that the name on the form
+
+4
+00:00:09,310 --> 00:00:11,080
+belongs to a verified person.
+
+5
+00:00:11,240 --> 00:00:12,890
+The question is a yes or a no.
+
+6
+00:00:13,040 --> 00:00:15,672
+What you hand over is your whole ID, and it gets
+
+7
+00:00:15,672 --> 00:00:20,230
+photographed, saved, and forwarded, and every copy is somewhere your details
+
+8
+00:00:20,230 --> 00:00:21,555
+can leak from later.
+
+9
+00:00:21,555 --> 00:00:23,320
+SabiID is a broker.
+
+10
+00:00:23,320 --> 00:00:27,090
+It sits between the identity sources and the people checking identity,
+
+11
+00:00:27,120 --> 00:00:29,520
+and it passes back the answer alone.
+
+12
+00:00:29,520 --> 00:00:32,960
+One question should cost one answer, not your whole record.
+
+13
+00:00:33,420 --> 00:00:35,460
+This is the citizen's own phone.
+
+14
+00:00:35,460 --> 00:00:38,590
+Adaeze enrolled once with her NIN and her BVN.
+
+15
+00:00:38,620 --> 00:00:41,410
+What she got back is a credential signed by the gateway,
+
+16
+00:00:41,410 --> 00:00:44,160
+and its body holds only salted hashes of her claims, not
+
+17
+00:00:44,260 --> 00:00:45,380
+the claims themselves.
+
+18
+00:00:45,620 --> 00:00:48,440
+Her name, her date of birth, her state, they live here
+
+19
+00:00:48,440 --> 00:00:50,400
+on the device and nowhere else.
+
+20
+00:00:50,420 --> 00:00:53,300
+She can reveal a value to herself, like her date of birth.
+
+21
+00:00:53,300 --> 00:00:56,400
+Nobody else sees any of it unless she chooses to send it.
+
+22
+00:00:56,400 --> 00:00:58,200
+The record stays with the person.
+
+23
+00:00:58,310 --> 00:01:00,870
+The gateway keeps a signature, not a copy.
+
+24
+00:01:01,220 --> 00:01:05,230
+Now a bank wants to open an account for her.
+
+25
+00:01:05,260 --> 00:01:08,600
+Instead of asking for the ID, it asks three narrow things.
+
+26
+00:01:08,620 --> 00:01:10,370
+Is this a verified identity.
+
+27
+00:01:10,440 --> 00:01:11,598
+Is she over 18.
+
+28
+00:01:11,598 --> 00:01:13,940
+Does the name on our form match.
+
+29
+00:01:13,960 --> 00:01:15,890
+It never asks for the date of birth, and it never
+
+30
+00:01:16,020 --> 00:01:17,080
+asks for the address.
+
+31
+00:01:17,260 --> 00:01:19,933
+It sends that short list to Adaeze and waits for her
+
+32
+00:01:19,933 --> 00:01:21,280
+to approve it on her phone.
+
+33
+00:01:21,300 --> 00:01:23,610
+The bank asks for the least it can get away with,
+
+34
+00:01:23,610 --> 00:01:24,430
+not the most.
+
+35
+00:01:24,920 --> 00:01:27,900
+Here is the request on Adaeze's phone.
+
+36
+00:01:27,920 --> 00:01:30,130
+She sees every field the bank wants.
+
+37
+00:01:30,290 --> 00:01:34,210
+She approves being a verified identity, and she approves being over 18.
+
+38
+00:01:34,210 --> 00:01:36,770
+She unticks the name check, because she does not want to
+
+39
+00:01:36,770 --> 00:01:38,770
+confirm the exact spelling this time.
+
+40
+00:01:38,850 --> 00:01:41,900
+She confirms it is her with a code from her SIM.
+
+41
+00:01:41,900 --> 00:01:45,440
+Whatever she did not tick is simply withheld.
+
+42
+00:01:45,440 --> 00:01:48,640
+Consent here is field by field, and she holds the switch.
+
+43
+00:01:48,640 --> 00:01:52,140
+Nothing is shared until she taps approve, and only what she taps.
+
+44
+00:01:52,720 --> 00:01:54,910
+This is everything the bank receives.
+
+45
+00:01:55,320 --> 00:01:57,520
+Yes, it is a verified identity.
+
+46
+00:01:57,520 --> 00:01:59,560
+Yes, she is over 18.
+
+47
+00:01:59,560 --> 00:02:02,780
+The name check is withheld, because she chose not to answer it.
+
+48
+00:02:02,780 --> 00:02:06,340
+There is no date of birth anywhere in this response.
+
+49
+00:02:06,340 --> 00:02:09,340
+The answer carries a signature from the gateway, and the bank
+
+50
+00:02:09,340 --> 00:02:14,050
+checks that signature right here in the browser against the gateway's public key.
+
+51
+00:02:14,050 --> 00:02:15,530
+It needs nothing from us.
+
+52
+00:02:15,620 --> 00:02:19,440
+Then a hospital asks for a genotype, which nobody has verified.
+
+53
+00:02:19,440 --> 00:02:20,830
+The gateway does not guess.
+
+54
+00:02:20,910 --> 00:02:23,660
+It says so, and points to where it can be done.
+
+55
+00:02:23,660 --> 00:02:27,480
+A signed yes or no, verifiable on the partner's own machine,
+
+56
+00:02:27,480 --> 00:02:29,940
+and honest about what it does not know.
+
+57
+00:02:31,020 --> 00:02:34,600
+Every question through the gateway is one line here, and each
+
+58
+00:02:34,600 --> 00:02:37,000
+line carries the hash of the line before it.
+
+59
+00:02:37,020 --> 00:02:41,110
+A line holds a pseudonymous ID, the partner, the fields asked,
+
+60
+00:02:41,110 --> 00:02:42,000
+and the outcomes.
+
+61
+00:02:42,020 --> 00:02:46,000
+It never holds a date of birth, an address, or a biometric.
+
+62
+00:02:46,020 --> 00:02:49,000
+We press verify and every line checks out.
+
+63
+00:02:49,020 --> 00:02:52,000
+Now we quietly edit one past line.
+
+64
+00:02:52,130 --> 00:02:55,090
+Verify points straight at it and says it was changed after
+
+65
+00:02:55,280 --> 00:02:56,000
+it was written.
+
+66
+00:02:56,020 --> 00:02:59,020
+We put it back, and the chain is whole again.
+
+67
+00:02:59,020 --> 00:03:02,860
+The log proves a check happened, and it cannot be rewritten
+
+68
+00:03:02,860 --> 00:03:05,000
+later without the edit showing.
+
+69
+00:03:06,120 --> 00:03:09,180
+This is the same mechanism, asked every month.
+
+70
+00:03:09,200 --> 00:03:12,640
+Before this ministry pays, SabiID asks each line one thing.
+
+71
+00:03:12,640 --> 00:03:15,520
+Is this still the same living person we enrolled.
+
+72
+00:03:15,520 --> 00:03:18,970
+The staff who answer with a fresh face check are paid.
+
+73
+00:03:19,080 --> 00:03:20,500
+Five lines are held.
+
+74
+00:03:20,520 --> 00:03:23,220
+One has no NIN record and was never a person.
+
+75
+00:03:23,520 --> 00:03:27,420
+One is listed as deceased at the Civil Registration service.
+
+76
+00:03:27,480 --> 00:03:29,620
+One has relocated and stopped answering.
+
+77
+00:03:29,640 --> 00:03:32,100
+One offered a sample that did not match.
+
+78
+00:03:32,100 --> 00:03:34,290
+And one is a real staff member who was just out
+
+79
+00:03:34,410 --> 00:03:35,880
+of network signal.
+
+80
+00:03:35,880 --> 00:03:38,920
+The system cannot tell that last one from a ghost, so
+
+81
+00:03:38,920 --> 00:03:40,560
+it sends them to a human.
+
+82
+00:03:40,640 --> 00:03:45,960
+On this run it pays about 1.4 million naira and holds back 955,000.
+
+83
+00:03:45,960 --> 00:03:49,410
+The audit line becomes the reason a payment was stopped, and
+
+84
+00:03:49,500 --> 00:03:52,370
+a real person still gets a human's second look.
+
+85
+00:03:53,000 --> 00:03:57,280
+Power cuts and dropped networks are normal here, so we built for them.
+
+86
+00:03:57,460 --> 00:04:01,130
+We run the payroll with the identity sources offline. Nothing pays.
+
+87
+00:04:01,130 --> 00:04:02,480
+Every line is queued.
+
+88
+00:04:02,480 --> 00:04:05,860
+When the link comes back, one reconcile step replays the queue,
+
+89
+00:04:05,860 --> 00:04:08,970
+and the log records the outage and the recovery as their own lines.
+
+90
+00:04:09,920 --> 00:04:11,200
+The chain still verifies across the gap.
+
+91
+00:04:11,200 --> 00:04:14,200
+And for the citizen with a basic phone and weak signal,
+
+92
+00:04:14,220 --> 00:04:17,620
+the same approvals work over a USSD short code.
+
+93
+00:04:17,650 --> 00:04:21,170
+They dial in, see the check waiting, approve it, and view
+
+94
+00:04:21,170 --> 00:04:22,300
+their last few checks.
+
+95
+00:04:22,300 --> 00:04:24,830
+The face step is skipped on a feature phone, and the
+
+96
+00:04:24,830 --> 00:04:26,380
+person is told it was skipped.
+
+97
+00:04:26,380 --> 00:04:28,960
+It keeps working when the lights go off, and it does
+
+98
+00:04:28,960 --> 00:04:31,800
+not shut out the person without a smartphone.

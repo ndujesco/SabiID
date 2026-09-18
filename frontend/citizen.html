@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SabiID Citizen Wallet</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main>
+  <h1>Citizen wallet</h1>
+  <p class="lead">This is the citizen's own device. The plain values live here and
+    nowhere else. When a service asks a question, it shows up below and nothing is
+    shared until it is approved, field by field.</p>
+
+  <label for="sid">Signed in as</label>
+  <select id="sid"></select>
+
+  <div id="view"></div>
+</main>
+
+<script src="/static/app.js"></script>
+<script>
+header("/citizen");
+
+async function boot() {
+  const list = await api("/api/citizens");
+  const sel = $("#sid");
+  list.forEach(c => sel.append(el("option", { value: c.sid }, `${c.sid}  (NIN …${c.nin_tail})`)));
+  sel.addEventListener("change", load);
+  load();
+}
+
+async function load() {
+  const sid = $("#sid").value;
+  const v = await api("/api/citizen/" + sid);
+  const root = $("#view");
+  root.innerHTML = "";
+
+  // wallet
+  const wallet = el("div", { class: "card" }, el("h2", {}, "Your credential"));
+  wallet.append(el("div", { class: "small muted" },
+    "An SD-JWT credential signed by the gateway. Its body carries only salted hashes of your claims. The values below never left this device."));
+  const kv = el("div", { class: "kv", style: "margin-top:10px" });
+  v.claim_names.forEach(name => {
+    const hidden = el("span", { class: "hiddenval" }, "•••••••••");
+    const shown = el("span", { hidden: true }, v.claims[name]);
+    const toggle = el("button", {
+      class: "ghost", style: "padding:3px 10px;font-size:12px",
+      onclick: () => { const h = shown.hidden; shown.hidden = !h; hidden.hidden = h; toggle.textContent = h ? "Hide" : "Reveal to me"; }
+    }, "Reveal to me");
+    kv.append(el("span", { class: "kk" }, name), el("span", {}, hidden, shown, " ", toggle));
+  });
+  wallet.append(kv);
+  root.append(wallet);
+
+  // pending requests
+  const pend = el("div", { class: "card" }, el("h2", {}, "Requests waiting for you"));
+  if (!v.pending.length) pend.append(el("div", { class: "muted small" }, "Nothing waiting."));
+  v.pending.forEach(req => pend.append(requestCard(sid, req)));
+  root.append(pend);
+
+  // activity
+  const act = el("div", { class: "card" }, el("h2", {}, "Who has asked about you"));
+  if (!v.activity.length) act.append(el("div", { class: "muted small" }, "No checks yet."));
+  const t = el("table", {}, el("tr", {}, ...["When", "Event", "By", "Fields"].map(h => el("th", {}, h))));
+  v.activity.slice().reverse().forEach(e => {
+    const fields = (e.detail.disclosed || e.detail.scope || e.detail.asked || []).join(", ");
+    t.append(el("tr", {}, el("td", {}, when(e.ts)), el("td", {}, e.event_type),
+      el("td", {}, e.actor), el("td", { class: "small" }, fields || "—")));
+  });
+  if (v.activity.length) act.append(t);
+  root.append(act);
+
+  // partners allowed
+  const grants = el("div", { class: "card" }, el("h2", {}, "Partners you have allowed"));
+  const partners = await api("/api/partners");
+  partners.forEach(p => {
+    const revoked = v.revoked_partners.includes(p.partner_id);
+    const btn = el("button", {
+      class: revoked ? "ghost" : "warn", style: "padding:5px 12px;font-size:12px",
+      onclick: async () => {
+        await jpost(`/api/partners/${p.partner_id}/${revoked ? "unrevoke" : "revoke"}`, { sid });
+        load();
+      }
+    }, revoked ? "Restore access" : "Revoke access");
+    grants.append(el("div", { class: "inline", style: "padding:7px 0;border-bottom:1px dashed var(--line)" },
+      el("span", { style: "font-weight:600;min-width:280px" }, p.display_name),
+      el("span", { class: "small muted" }, revoked ? "revoked" : "can ask, with your approval"),
+      btn));
+  });
+  root.append(grants);
+}
+
+function requestCard(sid, req) {
+  const card = el("div", { class: "card", style: "background:#fbfdfb" });
+  card.append(el("div", { html: `<b>${req.partner_name}</b> &nbsp;<span class="small muted">${req.purpose}</span>` }));
+  const checks = el("div", { class: "checks" });
+  const boxes = req.scope.map(p => {
+    const cb = el("input", { type: "checkbox" });
+    cb.checked = true;
+    const needsBio = p.startsWith("liveness");
+    checks.append(el("div", { class: "row" }, cb,
+      el("div", {}, el("div", { class: "lbl" }, p),
+        el("div", { class: "sub" }, needsBio ? "needs a fresh face or fingerprint on this phone" : "a yes or no, or a single value"))));
+    return { p, cb, needsBio };
+  });
+  const otp = el("input", { type: "text", placeholder: "6-digit OTP from your SIM", maxlength: "6", style: "max-width:240px" });
+  const bio = el("input", { type: "checkbox" });
+  const msg = el("div", {});
+  const approve = el("button", {
+    onclick: async () => {
+      const approved = boxes.filter(b => b.cb.checked).map(b => b.p);
+      const body = { approved, otp: otp.value };
+      if (boxes.some(b => b.needsBio && b.cb.checked)) body.bio_sample = bio.checked ? "live-capture::" + sid + "::baseline" : "live-capture::" + sid + "::mismatch";
+      const r = await jpost(`/api/requests/${req.request_id}/consent`, body);
+      if (r.error) { msg.className = "banner bad"; msg.textContent = r.error; return; }
+      const shared = r.results.filter(x => x.outcome !== "withheld").map(x => x.predicate);
+      const held = r.results.filter(x => x.outcome === "withheld").map(x => x.predicate);
+      msg.className = "banner ok";
+      msg.textContent = `Shared: ${shared.join(", ") || "nothing"}. Withheld: ${held.join(", ") || "nothing"}.`;
+      setTimeout(load, 900);
+    }
+  }, "Approve the ticked fields");
+  const deny = el("button", {
+    class: "ghost",
+    onclick: async () => { await jpost(`/api/requests/${req.request_id}/consent`, { approved: [], otp: otp.value || "000000" }); load(); }
+  }, "Deny all");
+
+  card.append(checks);
+  if (boxes.some(b => b.needsBio)) card.append(el("label", {}, "Face sample"),
+    el("div", { class: "inline" }, bio, el("span", { class: "small muted" }, "ticked = a matching sample, unticked = a wrong person holding the phone")));
+  card.append(el("label", {}, "Confirm it is you"), otp, el("div", { class: "spacer" }), approve, deny, el("div", { class: "spacer" }), msg);
+  return card;
+}
+
+boot();
+</script>
+</body>
+</html>

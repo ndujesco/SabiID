@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SabiID Proof-of-Check Log</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main>
+  <h1>Proof-of-check log</h1>
+  <p class="lead">Every question asked through the gateway is one line here. Each line
+    carries the hash of the line before it. Change or remove a past line and every
+    hash after it stops matching, and the break points at the line that moved. A line
+    holds a pseudonymous SID, the partner, the fields asked, the yes or no outcomes,
+    and hashes. It never holds a date of birth, an address, or a biometric.</p>
+
+  <div class="inline">
+    <button id="verify">Verify chain integrity</button>
+    <button id="tamper" class="ghost">Demo: quietly edit a line</button>
+    <button id="restore" class="ghost">Demo: put it back</button>
+  </div>
+  <div id="status"></div>
+  <div class="card" style="overflow:auto"><div id="table"></div></div>
+</main>
+
+<script src="/static/app.js"></script>
+<script>
+header("/auditor");
+const focusSeq = Number(new URLSearchParams(location.search).get("seq")) || null;
+
+async function draw() {
+  const entries = await api("/api/ledger");
+  const t = el("table", {},
+    el("tr", {}, ...["#", "When", "Event", "Actor", "Subject", "Detail"].map(h => el("th", {}, h))));
+  entries.forEach(e => {
+    const tr = el("tr", e.seq === focusSeq ? { class: "hi" } : {},
+      el("td", { class: "mono" }, e.seq),
+      el("td", { class: "small" }, when(e.ts)),
+      el("td", {}, e.event_type),
+      el("td", { class: "small" }, e.actor),
+      el("td", { class: "mono small" }, e.subject_sid || "—"),
+      el("td", { class: "small mono" }, JSON.stringify(e.detail)));
+    t.append(tr);
+  });
+  $("#table").innerHTML = "";
+  $("#table").append(t);
+  if (focusSeq) { const r = $("tr.hi"); if (r) r.scrollIntoView({ block: "center" }); }
+}
+
+async function verify() {
+  const v = await api("/api/ledger/verify");
+  const s = $("#status");
+  s.className = "banner " + (v.ok ? "ok" : "bad");
+  s.textContent = v.ok
+    ? `All ${v.checked} lines check out. The chain is intact.`
+    : `Broken at line ${v.broken_at}. ${v.detail}. The first ${v.checked} lines are still sound.`;
+}
+
+$("#verify").onclick = verify;
+$("#tamper").onclick = async () => {
+  const r = await jpost("/api/dev/tamper", {});
+  if (r.error) { $("#status").className = "banner info"; $("#status").textContent = r.error; return; }
+  await draw(); await verify();
+};
+$("#restore").onclick = async () => { await jpost("/api/dev/restore", {}); await draw(); await verify(); };
+
+draw();
+</script>
+</body>
+</html>
